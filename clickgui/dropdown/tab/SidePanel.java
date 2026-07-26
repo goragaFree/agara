@@ -176,13 +176,9 @@ public class SidePanel {
         Scissor.disable();
 
         // scrollable tab content — clipped to the content window below the header
-        // (and to the still-growing block during the open morph). The window
-        // bottom rises by the rounded-corner inset so rows/sliders don't poke
-        // past the bottom arc at large Radius values (rows are inset 3px).
+        // (and to the still-growing block during the open morph)
         float top = py + HEADER + 1f;
-        float bottom = Math.min(
-                py + HEADER + CONTENT_H - Theme.cornerInset(Theme.PANEL_RADIUS, 3f),
-                by + bh);
+        float bottom = Math.min(py + HEADER + CONTENT_H, by + bh);
         if (bottom > top) {
             Scissor.enable(px, top, W, bottom - top, SCISSOR_SCALE);
             if (switching) {

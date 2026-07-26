@@ -7,22 +7,10 @@ import rich.util.render.Render2D;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class FontRenderer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("rich/FontRenderer");
-
-    /** Диагностика: не спамим лог — одна и та же причина не чаще раза в секунду. */
-    private static final Map<String, Long> LOG_THROTTLE = new ConcurrentHashMap<>();
-
-    static boolean shouldLog(String key) {
-        long now = System.currentTimeMillis();
-        Long last = LOG_THROTTLE.get(key);
-        if (last != null && now - last < 1000L) return false;
-        LOG_THROTTLE.put(key, now);
-        return true;
-    }
 
     private final FontPipeline pipeline;
     private final Map<String, FontAtlas> fonts;
@@ -93,12 +81,7 @@ public class FontRenderer {
 
     public void drawText(String fontName, String text, float x, float y, float size, int color) {
         FontAtlas atlas = fonts.get(fontName);
-        if (atlas == null) {
-            if (shouldLog("missing:" + fontName)) {
-                LOGGER.warn("drawText: font '{}' is not registered (registered: {})", fontName, fonts.keySet());
-            }
-            return;
-        }
+        if (atlas == null) return;
         beforeDraw(fontName);
         pipeline.drawText(atlas, text, x, y, size, color, 0, 0, 0);
     }

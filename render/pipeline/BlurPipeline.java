@@ -82,18 +82,16 @@ public class BlurPipeline {
         copyValid = false;
     }
 
-    // Точное деление, как в RectPipeline — ceil при нечётном фреймбуфере
-    // смещал блюр-слой относительно заливки (шов по кромкам панелей).
-    private float getFixedScaledWidth() {
+    private int getFixedScaledWidth() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.getWindow() == null) return 960;
-        return client.getWindow().getFramebufferWidth() / FIXED_GUI_SCALE;
+        return (int) Math.ceil((double) client.getWindow().getFramebufferWidth() / FIXED_GUI_SCALE);
     }
 
-    private float getFixedScaledHeight() {
+    private int getFixedScaledHeight() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.getWindow() == null) return 540;
-        return client.getWindow().getFramebufferHeight() / FIXED_GUI_SCALE;
+        return (int) Math.ceil((double) client.getWindow().getFramebufferHeight() / FIXED_GUI_SCALE);
     }
 
     private void ensureInitialized() {
@@ -152,8 +150,8 @@ public class BlurPipeline {
 
         ensureCopyTexture(fbWidth, fbHeight);
 
-        float fixedScreenWidth = getFixedScaledWidth();
-        float fixedScreenHeight = getFixedScaledHeight();
+        int fixedScreenWidth = getFixedScaledWidth();
+        int fixedScreenHeight = getFixedScaledHeight();
 
         prepareUniformData(x, y, width, height,
                 fixedScreenWidth,

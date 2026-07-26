@@ -195,18 +195,12 @@ public class Render2D {
      * Soft drop-shadow: a rounded rect whose edge fades out over {@code softness}
      * fixed-scaled pixels. Draw it BEFORE the panel/element it sits under (it
      * batches like a normal rect). {@code color} alpha controls shadow strength.
-     * Рисуется ТОЛЬКО внешняя растушёвка (cutInner): внутренность гасится, чтобы
-     * тень не просвечивала сквозь полупрозрачную панель и не меняла её плотность.
      */
     public static void shadow(float x, float y, float width, float height, float radius, float softness, int color) {
-        // Тень с нулевой растушёвкой выродилась бы в сплошной прямоугольник, а с
-        // нулевой альфой — в пустой вызов: и то и другое просто не рисуем
-        // (слайдер Shadow = 0 или альфа цвета 0 в теме полностью выключают тень).
-        if (softness <= 0.02f || (color >>> 24) == 0) return;
         int[] colors = ColorUtil.solid(color);
         float[] radii = {radius, radius, radius, radius};
         Initialization.getInstance().getManager().getRenderCore().getRectPipeline()
-                .drawRect(x, y, width, height, colors, radii, 0f, softness, true);
+                .drawRect(x, y, width, height, colors, radii, 0f, softness);
     }
 
     public static void gradientRect(float x, float y, float width, float height,
@@ -339,23 +333,6 @@ public class Render2D {
 
     public static void glass(float x, float y, float width, float height, float radius, int tint, float opacity) {
         glass(x, y, width, height, radius, radius, radius, radius, tint, opacity);
-    }
-
-    /** Стекло с пер-вызовными параметрами искажения и бликов (HUD-стили). */
-    public static void glass(float x, float y, float width, float height, float radius,
-                             int tint, float opacity, float distortion, float strength) {
-        flushRects();
-        GpuTextureView blurred = USE_UI_BLUR ? UiGlass.blurred() : null;
-        var core = Initialization.getInstance().getManager().getRenderCore();
-        if (blurred != null && core != null && core.getGlassRectPipeline() != null) {
-            float[] radii = {radius, radius, radius, radius};
-            core.getGlassRectPipeline().draw(x, y, width, height, radii, tint, opacity,
-                    distortion, strength, blurred);
-        } else {
-            int a = Math.max(0, Math.min(255, (int) (((tint >> 24) & 0xFF) * opacity)));
-            int fallback = (a << 24) | (tint & 0xFFFFFF);
-            rect(x, y, width, height, fallback, radius);
-        }
     }
 
     public static void glass(float x, float y, float width, float height,

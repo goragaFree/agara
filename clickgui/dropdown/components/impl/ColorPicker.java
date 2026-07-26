@@ -17,8 +17,6 @@ public class ColorPicker {
     private boolean showing;
     private float x, y;
     private float hue, sat, bri, alpha;
-    /** Полоса альфы внизу; false — без неё (например, тень: сила — отдельным слайдером Sh. Power). */
-    private boolean showAlpha = true;
     private int drag; // 0 none, 1 sb, 2 hue, 3 alpha
     private Consumer<Color> onChange;
 
@@ -32,16 +30,10 @@ public class ColorPicker {
     private boolean targetOpen; // desired visible state
 
     public float width() { return W; }
-    public float height() { return PAD * 2f + SB + (showAlpha ? GAP + 6f : 0f); }
+    public float height() { return PAD * 2f + SB + GAP + 6f; }
     public boolean isShowing() { return showing; }
 
     public void open(float px, float py, Color c, Consumer<Color> cb) {
-        open(px, py, c, true, cb);
-    }
-
-    /** @param withAlpha показывать ли полосу альфы; false — альфа исходного цвета сохраняется как есть. */
-    public void open(float px, float py, Color c, boolean withAlpha, Consumer<Color> cb) {
-        this.showAlpha = withAlpha;
         float[] hsb = Color.RGBtoHSB(c.getRed(), c.getGreen(), c.getBlue(), null);
         hue = hsb[0]; sat = hsb[1]; bri = hsb[2];
         alpha = c.getAlpha() / 255f;
@@ -107,13 +99,11 @@ public class ColorPicker {
         }
         Render2D.rect(hueX - 1f, sbY + dHue * SB - 1f, BAR + 2f, 2f, Theme.color(Color.WHITE, pa), 1f);
 
-        if (showAlpha) {
-            float aY = sbY + SB + GAP, aW = W - PAD * 2f;
-            int base = Color.HSBtoRGB(dHue, dSat, dBri) | 0xFF000000;
-            Render2D.gradientRect(sbX, aY, aW, 6f,
-                    new int[]{wa(base & 0x00FFFFFF, pa), wa(base, pa), wa(base, pa), wa(base & 0x00FFFFFF, pa)}, 3f);
-            Render2D.rect(sbX + dAlpha * aW - 1f, aY - 1f, 2f, 8f, Theme.color(Color.WHITE, pa), 1f);
-        }
+        float aY = sbY + SB + GAP, aW = W - PAD * 2f;
+        int base = Color.HSBtoRGB(dHue, dSat, dBri) | 0xFF000000;
+        Render2D.gradientRect(sbX, aY, aW, 6f,
+                new int[]{wa(base & 0x00FFFFFF, pa), wa(base, pa), wa(base, pa), wa(base & 0x00FFFFFF, pa)}, 3f);
+        Render2D.rect(sbX + dAlpha * aW - 1f, aY - 1f, 2f, 8f, Theme.color(Color.WHITE, pa), 1f);
 
         x = savedX;   // restore the rest position so hit-testing stays aligned
     }
@@ -136,10 +126,8 @@ public class ColorPicker {
         if (in(mx, my, sbX, sbY, SBW, SB)) { drag = 1; updateDrag(mx, my); return true; }
         float hueX = sbX + SBW + GAP;
         if (in(mx, my, hueX, sbY, BAR, SB)) { drag = 2; updateDrag(mx, my); return true; }
-        if (showAlpha) {
-            float aY = sbY + SB + GAP;
-            if (in(mx, my, sbX, aY, aW, 6f)) { drag = 3; updateDrag(mx, my); return true; }
-        }
+        float aY = sbY + SB + GAP;
+        if (in(mx, my, sbX, aY, aW, 6f)) { drag = 3; updateDrag(mx, my); return true; }
         if (!contains(mx, my)) { close(); return false; }
         return true;
     }

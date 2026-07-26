@@ -65,23 +65,6 @@ public final class ThemeManager {
         Theme.SEPARATOR = current.extra;
         Theme.CONTROL_BG = current.extra;
 
-        // panel drop-shadow: цвет и плотность — из пикера (alpha цвета),
-        // размер (растушёвка) — из слайдера Shadow; 0 полностью выключает тень
-        // (Render2D.shadow при нулевой растушёвке/альфе просто не рисует)
-        Theme.SHADOW = current.shadow;
-        Theme.PANEL_SHADOW = Math.max(0f, current.shadowSize);
-
-        // закругление: слайдер Radius задаёт радиус окон/колонок напрямую,
-        // модули и контролы масштабируются пропорционально штатным значениям
-        // (8 / 5 / 4 px), чтобы меню оставалось стилистически цельным.
-        // Шейдеры сами клампят слишком большой радиус к половине стороны.
-        float radius = Math.max(0f, Math.min(16f, current.radius));
-        float radiusK = radius / 8f;
-        Theme.PANEL_RADIUS   = radius;
-        Theme.COLUMN_RADIUS  = radius;
-        Theme.MODULE_RADIUS  = 5f * radiusK;
-        Theme.CONTROL_RADIUS = 4f * radiusK;
-
         // liquid-glass knobs
         Theme.GLASS_STRENGTH = clamp01(current.glassStrength);
         Theme.GLASS_DISTORTION = current.glassDistortion;
@@ -157,13 +140,10 @@ public final class ThemeManager {
         o.addProperty("text", g.text.getRGB());
         o.addProperty("outline", g.outline.getRGB());
         o.addProperty("extra", g.extra.getRGB());
-        o.addProperty("shadow", g.shadow.getRGB());
         o.addProperty("opacity", g.opacity);
         o.addProperty("glassStrength", g.glassStrength);
         o.addProperty("glassDistortion", g.glassDistortion);
         o.addProperty("glassBlur", g.glassBlur);
-        o.addProperty("shadowSize", g.shadowSize);
-        o.addProperty("radius", g.radius);
         return o;
     }
 
@@ -173,15 +153,11 @@ public final class ThemeManager {
         if (o.has("text"))       g.text       = new Color(o.get("text").getAsInt(), true);
         if (o.has("outline"))    g.outline    = new Color(o.get("outline").getAsInt(), true);
         if (o.has("extra"))      g.extra      = new Color(o.get("extra").getAsInt(), true);
-        if (o.has("shadow"))     g.shadow     = new Color(o.get("shadow").getAsInt(), true);
         // backward compat: old configs had no opacity -> derive from the background alpha
         g.opacity = o.has("opacity") ? o.get("opacity").getAsFloat() : g.background.getAlpha() / 255f;
         if (o.has("glassStrength"))   g.glassStrength   = o.get("glassStrength").getAsFloat();
         if (o.has("glassDistortion")) g.glassDistortion = o.get("glassDistortion").getAsFloat();
         if (o.has("glassBlur"))       g.glassBlur       = o.get("glassBlur").getAsFloat();
-        if (o.has("shadowSize"))      g.shadowSize      = o.get("shadowSize").getAsFloat();
-        // старые конфиги/темы без radius остаются на штатных 8px
-        if (o.has("radius"))          g.radius          = o.get("radius").getAsFloat();
     }
 
     private static Color withAlpha(Color c, int alpha) {

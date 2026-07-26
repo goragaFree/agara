@@ -5,7 +5,6 @@ import org.lwjgl.glfw.GLFW;
 import rich.Initialization;
 import rich.modules.module.ModuleStructure;
 import rich.modules.module.category.ModuleCategory;
-import rich.screens.clickgui.dropdown.components.SettingAnimationController;
 import rich.screens.clickgui.dropdown.components.SettingComponent;
 import rich.screens.clickgui.dropdown.theme.Theme;
 import rich.util.animations.SmoothAnimation;
@@ -46,12 +45,6 @@ public class Panel {
     private ModuleButton selected;
     private ModuleButton binding;
 
-    /** Lower-cased search query from the {@code SearchBar}; empty = no filtering. */
-    private String filter = "";
-    /** Rows that are actually visible this frame — the only ones that take clicks. */
-    private final List<ModuleButton> hitButtons = new ArrayList<>();
-    private float emptyFade;   // 0..1 — "ничего не найдено" hint fade
-
     public Panel(ModuleCategory category) {
         this.category = category;
         try {
@@ -82,59 +75,9 @@ public class Panel {
         if (binding != null) binding.setBinding(false);
         binding = null;
         swap.set(0);
-        // Прокрутка СПИСКА модулей намеренно НЕ сбрасывается: закрыл меню,
-        // открыл снова — список на том же месте. Панели пересоздаются при
-        // каждом открытии (ClickGui.buildPanels), но позиция переносится со
-        // старых панелей на новые (см. restoreModuleScroll). При перезапуске
-        // клиента переносить неоткуда — меню естественно стартует сверху.
-        // Скролл НАСТРОЕК сбрасываем: вид настроек при закрытии сворачивается.
-        settingsScroll = settingsTarget = 0;
+        moduleScroll = settingsScroll = 0;
+        moduleTarget = settingsTarget = 0;
         backArrowHover = 0;
-        filter = "";
-        emptyFade = 0;
-        hitButtons.clear();
-        for (ModuleButton b : buttons) b.setReveal(1f);
-    }
-
-    /** Целевая прокрутка списка модулей — для переноса между пересозданиями панелей. */
-    public float getModuleScrollTarget() {
-        return moduleTarget;
-    }
-
-    /**
-     * Восстановить прокрутку списка снапом (без «доезда» с самого верха) —
-     * вызывается из ClickGui.buildPanels при пересоздании панелей, чтобы
-     * меню открывалось на том же месте, где его закрыли. Выход за пределы
-     * не страшен: цель клампится по moduleMax каждый кадр.
-     */
-    public void restoreModuleScroll(float value) {
-        this.moduleTarget = value;
-        this.moduleScroll = value;
-    }
-
-    /* ============================== Search ============================== */
-
-    /** Live filter from the search bar: matching rows stay, the rest fold away. */
-    public void setFilter(String query) {
-        String q = query == null ? "" : query.trim().toLowerCase();
-        if (q.equals(filter)) return;
-        filter = q;
-        moduleTarget = 0f;                                   // fresh results start from the top
-        if (!filter.isEmpty() && selected != null) back();   // searching always shows the list view
-    }
-
-    /** How many modules of this panel match the current filter. */
-    public int matchCount() {
-        int n = 0;
-        for (ModuleButton b : buttons) if (matchesFilter(b)) n++;
-        return n;
-    }
-
-    private boolean matchesFilter(ModuleButton b) {
-        if (filter.isEmpty()) return true;
-        if (b.getModule().getName().toLowerCase().contains(filter)) return true;
-        String desc = b.getModule().getDescription();
-        return desc != null && !desc.isEmpty() && desc.toLowerCase().contains(filter);
     }
 
     /* ============================== Render ============================== */
@@ -150,15 +93,11 @@ public class Panel {
 
         float sepY = y + Theme.HEADER_HEIGHT;
         float contentY = sepY + 1f;
-        float pad = 5f;
         // keep the content clear of the panel's rounded bottom corners so the
-        // accent bar / rows can't poke out past the rounded edge. The inset is
-        // derived from the corner geometry (rows are inset `pad` from the
-        // sides, so only the part of the arc deeper than `pad` matters): at
-        // the stock radius that's ~1px instead of a fixed dead band, and big
-        // radii no longer cut the list high above the bottom edge.
-        float bottomInset = Theme.cornerInset(Theme.COLUMN_RADIUS, pad);
+        // accent bar / rows can't poke out past the rounded edge.
+        float bottomInset = Theme.COLUMN_RADIUS - 3f;
         float contentH = height - Theme.HEADER_HEIGHT - 1f - bottomInset;
+        float pad = 5f;
 
         // --- header pass (not scissored) : one rect flush + one text flush ---
         Batch.beginText();
@@ -241,46 +180,15 @@ public class Panel {
     private void renderModuleList(DrawContext ctx, float lx, float ly, float lw, float lh,
                                   float mx, float my, float alpha, float pad) {
         float rowH = Theme.MODULE_HEIGHT + Theme.MODULE_GAP;
-        hitButtons.clear();
-
-        // each row owns an animated 0..1 reveal driven by the search filter; the layout
-        // advances by (rowH * reveal), so rows fold shut / slide open and the list
-        // reflows smoothly instead of jumping when the query changes.
-        float total = 0f;
-        int matched = 0;
-        for (ModuleButton b : buttons) {
-            boolean match = matchesFilter(b);
-            if (match) matched++;
-            b.setReveal(SettingAnimationController.approach(b.getReveal(), match ? 1f : 0f, 14f));
-            total += rowH * b.getReveal();
-        }
-
+        float total = buttons.size() * rowH;
         moduleMax = Math.min(0f, lh - total - 4f);
         moduleTarget = Math.max(moduleMax, Math.min(0f, moduleTarget));
         moduleScroll = smoothScroll(moduleScroll, moduleTarget);
 
-        float ry = ly + 3f + moduleScroll;
-        boolean firstVisible = true;
-        for (ModuleButton b : buttons) {
-            float reveal = b.getReveal();
-            if (reveal <= 0.01f) continue;
-            // content fades over the top part of the slot growth, so a folding row's
-            // text is long gone before the neighbours slide across its slot.
-            float fade = Math.max(0f, (reveal - 0.55f) / 0.45f);
-            if (fade > 0.01f) {
-                b.render(ctx, lx + pad, ry, lw - pad * 2f, mx, my, alpha * fade, !firstVisible);
-                if (fade > 0.5f) hitButtons.add(b);
-                firstVisible = false;
-            }
-            ry += rowH * reveal;
-        }
-
-        // dim hint when the search filtered the whole panel away
-        emptyFade = SettingAnimationController.approach(emptyFade,
-                !filter.isEmpty() && matched == 0 ? 1f : 0f, 14f);
-        if (emptyFade > 0.01f) {
-            Theme.FONT.drawCentered("Ничего не найдено", lx + lw / 2f, ly + lh / 2f - Theme.SMALL_SIZE,
-                    Theme.SMALL_SIZE, Theme.color(Theme.TEXT_DESC, alpha * emptyFade));
+        float startY = ly + 3f + moduleScroll;
+        for (int i = 0; i < buttons.size(); i++) {
+            float ry = startY + i * rowH;
+            buttons.get(i).render(ctx, lx + pad, ry, lw - pad * 2f, mx, my, alpha, i > 0);
         }
     }
 
@@ -335,7 +243,7 @@ public class Panel {
             // header has no action in list view
             if (my <= y + Theme.HEADER_HEIGHT) return true;
 
-            for (ModuleButton b : hitButtons) {
+            for (ModuleButton b : buttons) {
                 if (!b.contains(mx, my)) continue;
                 if (button == 0) {
                     b.getModule().switchState();

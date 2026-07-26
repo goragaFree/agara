@@ -58,11 +58,8 @@ public class BindComp extends SettingComponent {
         if (flash > 0.001f)
             Render2D.rect(dbx, dby, dbw, dbh, Theme.color(new Color(255, 255, 255, 120), alpha * flash), Theme.CONTROL_RADIUS);
 
-        // в режиме прослушивания капсула залита акцентом — «...» рисуются
-        // контрастным к акценту цветом (Theme.onAccent), иначе при белом
-        // акценте белые точки сливались с заливкой
         drawText(txt, bx + (bw - tw) / 2f, by + (bh - Theme.SMALL_SIZE) / 2f, Theme.SMALL_SIZE,
-                listening ? Theme.onAccent() : Theme.lerp(Theme.TEXT_OFF, Theme.TEXT_ON, hover));
+                listening ? Theme.TEXT_ON : Theme.lerp(Theme.TEXT_OFF, Theme.TEXT_ON, hover));
     }
 
     @Override

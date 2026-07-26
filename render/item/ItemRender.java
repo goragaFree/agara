@@ -78,42 +78,10 @@ public class ItemRender {
     }
 
     public static void drawBlockItem(DrawContext context, ItemStack stack, float x, float y, float scale, float alpha) {
-        drawItemWithContext(context, stack, x, y, scale, alpha);
-    }
-
-    /**
-     * Отрисовка предмета через ванильный context.drawItem с ЧЕСТНЫМ fade.
-     * <p>
-     * Ванильный GUI-рендер предметов не умеет полупрозрачность, поэтому alpha
-     * (0..1) реализуется как плавное сжатие предмета к центру его слота:
-     * центр вычисляется от НОМИНАЛЬНОГО размера (16 * scale) и не двигается,
-     * а масштаб умножается на fade. При alpha = 1 поведение прежнее (без
-     * сжатия), при alpha -> 0 предмет плавно "растворяется" в точку — синхронно
-     * с альфой панели, а не резким морганием в конце.
-     * <p>
-     * Значения alpha вне 0..1 клампятся (защита от вызовов со старой семантикой
-     * 0..255).
-     */
-    public static void drawItemWithContext(DrawContext context, ItemStack stack, float x, float y, float scale, float alpha) {
-        drawItemWithContext(context, stack, x, y, scale, alpha, false);
-    }
-
-    /**
-     * То же + опциональный ВАНИЛЬНЫЙ оверлей стека (количество, полоска
-     * прочности, кулдаун). Оверлей рисуется внутри той же матрицы и в том же
-     * отложенном пайплайне, что и сам предмет — поэтому ложится ПОВЕРХ иконки
-     * (текст клиента, нарисованный через Fonts, предметы наоборот накрывают)
-     * и масштабируется/сжимается вместе с ней.
-     */
-    public static void drawItemWithContext(DrawContext context, ItemStack stack, float x, float y, float scale, float alpha, boolean withOverlay) {
-        if (stack.isEmpty()) return;
-
-        float fade = Math.max(0f, Math.min(1f, alpha));
-        if (fade <= 0.01f) return;
+        if (stack.isEmpty() || alpha <= 0.01f) return;
 
         float compensation = getScaleCompensation();
-        // fade сжимает предмет вокруг неподвижного центра слота
-        float finalScale = scale * compensation * fade;
+        float finalScale = scale * compensation;
 
         float size = 16 * scale;
         float centerX = x + size / 2f;
@@ -127,12 +95,28 @@ public class ItemRender {
         matrices.translate(-8, -8);
 
         context.drawItem(stack, 0, 0);
-        if (withOverlay) {
-            // пустой override гасит ванильную цифру количества: остаются полоска
-            // прочности и кулдаун; каунт элемент рисует сам клиентским шрифтом
-            // через LateText (поверх композита предметов)
-            context.drawStackOverlay(mc.textRenderer, stack, 0, 0, "");
-        }
+
+        matrices.popMatrix();
+    }
+
+    public static void drawItemWithContext(DrawContext context, ItemStack stack, float x, float y, float scale, float alpha) {
+        if (stack.isEmpty() || alpha <= 0.01f) return;
+
+        float compensation = getScaleCompensation();
+        float finalScale = scale * compensation;
+
+        float size = 16 * scale;
+        float centerX = x + size / 2f;
+        float centerY = y + size / 2f;
+
+        Matrix3x2fStack matrices = context.getMatrices();
+        matrices.pushMatrix();
+
+        matrices.translate(centerX, centerY);
+        matrices.scale(finalScale, finalScale);
+        matrices.translate(-8, -8);
+
+        context.drawItem(stack, 0, 0);
 
         matrices.popMatrix();
     }

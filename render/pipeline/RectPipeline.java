@@ -70,8 +70,6 @@ public class RectPipeline {
         final float[] radii = new float[4];
         float innerBlur;
         float softness;
-        /** 1 = режим тени: рисуется только внешняя растушёвка, внутренность гасится. */
-        float cutInner;
         final int[] colors9 = new int[9];
     }
 
@@ -119,16 +117,6 @@ public class RectPipeline {
      */
     public void drawRect(float x, float y, float width, float height,
                          int[] colors, float[] radii, float innerBlur, float softness) {
-        drawRect(x, y, width, height, colors, radii, innerBlur, softness, false);
-    }
-
-    /**
-     * @param cutInner true — режим тени: внутренность фигуры гасится, рисуется
-     *                 только внешняя растушёвка. Тень под ПОЛУПРОЗРАЧНОЙ панелью
-     *                 перестаёт просвечивать сквозь неё и менять её плотность.
-     */
-    public void drawRect(float x, float y, float width, float height,
-                         int[] colors, float[] radii, float innerBlur, float softness, boolean cutInner) {
 
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.getFramebuffer() == null) return;
@@ -146,7 +134,6 @@ public class RectPipeline {
         e.radii[3] = radii[3];
         e.innerBlur = innerBlur;
         e.softness = softness;
-        e.cutInner = cutInner ? 1f : 0f;
         fill9Colors(colors, e.colors9);
 
         rectCount++;
@@ -279,7 +266,7 @@ public class RectPipeline {
 
             dataBuffer.putFloat(e.innerBlur);
             dataBuffer.putFloat(e.softness);
-            dataBuffer.putFloat(e.cutInner);
+            dataBuffer.putFloat(0f);
             dataBuffer.putFloat(0f);
 
             for (int c = 0; c < 9; c++) {

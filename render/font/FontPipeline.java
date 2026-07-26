@@ -18,18 +18,12 @@ import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gl.UniformType;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.AbstractTexture;
-import net.minecraft.client.texture.GlTexture;
 import net.minecraft.util.Identifier;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL13;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.system.MemoryUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,8 +31,6 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
 public class FontPipeline {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger("rich/FontPipeline");
 
     private static final Identifier PIPELINE_ID = Identifier.of("rich", "pipeline/msdf");
     private static final Identifier SHADER_ID = Identifier.of("rich", "core/msdf");
@@ -157,18 +149,16 @@ public class FontPipeline {
         }
     }
 
-    // Точное деление, как в RectPipeline — ceil при нечётном фреймбуфере
-    // смещал текст относительно панелей (до ~1px к низу экрана).
-    private float getFixedScaledWidth() {
+    private int getFixedScaledWidth() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.getWindow() == null) return 960;
-        return client.getWindow().getFramebufferWidth() / FIXED_GUI_SCALE;
+        return (int) Math.ceil((double) client.getWindow().getFramebufferWidth() / FIXED_GUI_SCALE);
     }
 
-    private float getFixedScaledHeight() {
+    private int getFixedScaledHeight() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.getWindow() == null) return 540;
-        return client.getWindow().getFramebufferHeight() / FIXED_GUI_SCALE;
+        return (int) Math.ceil((double) client.getWindow().getFramebufferHeight() / FIXED_GUI_SCALE);
     }
 
     private void ensureInitialized() {
@@ -196,21 +186,11 @@ public class FontPipeline {
                          float outlineWidth, int outlineColor, float rotation) {
 
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.getFramebuffer() == null) {
-            if (FontRenderer.shouldLog("fb-null")) {
-                LOGGER.warn("drawText: framebuffer is null, dropping '{}'", text);
-            }
-            return;
-        }
+        if (client.getFramebuffer() == null) return;
         if (text == null || text.isEmpty()) return;
 
         atlas.ensureLoaded();
-        if (atlas.getGlyphCount() == 0) {
-            if (FontRenderer.shouldLog("glyphs0:" + atlas.getTextureId())) {
-                LOGGER.warn("drawText: atlas {} loaded with 0 glyphs, dropping '{}'", atlas.getTextureId(), text);
-            }
-            return;
-        }
+        if (atlas.getGlyphCount() == 0) return;
 
         ensureInitialized();
 
@@ -323,9 +303,6 @@ public class FontPipeline {
 
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.getFramebuffer() == null) {
-            if (FontRenderer.shouldLog("flush-fb-null")) {
-                LOGGER.warn("flush: framebuffer is null, dropping {} glyph runs", runs.size());
-            }
             runs.clear();
             return;
         }
@@ -336,60 +313,18 @@ public class FontPipeline {
         runs.clear();
     }
 
-    /**
-     * Draw one run, splitting into ≤MAX_CHARS render passes (UBO stays bounded).
-     *
-     * <p><b>Гибридный биндинг атласа — обе строки обязательны:</b>
-     * <ul>
-     *   <li>{@code renderPass.bindTexture(...)} — штатный путь: ведёт учёт
-     *       бэкенда и привязывает LINEAR-сэмплер. От этого состояния зависят
-     *       чужие отрисовки (спрайты предметов, лица, glass) — без него они
-     *       начинают мигать чёрным.</li>
-     *   <li>Сырой {@code glBindTexture} перед пассом — гарантия РЕАЛЬНОГО
-     *       состояния юнита 0: после сырых биндингов TexturePipeline кэш
-     *       бэкенда может посчитать атлас уже привязанным и пропустить
-     *       настоящий биндинг — тогда MSDF-шейдер сэмплит пустоту и текст
-     *       молча исчезает (исходный баг редактора).</li>
-     * </ul>
-     * Не убирать ни одну из частей!
-     */
+    /** Draw one run, splitting into ≤MAX_CHARS render passes (UBO stays bounded). */
     private void drawRun(MinecraftClient client, GlyphRun run) {
         int total = run.glyphs.size();
         if (total == 0) return;
 
         AbstractTexture texture = client.getTextureManager().getTexture(run.atlas.getTextureId());
-        if (texture == null) {
-            if (FontRenderer.shouldLog("tex-null:" + run.atlas.getTextureId())) {
-                LOGGER.warn("drawRun: texture {} not found in TextureManager, dropping {} glyphs",
-                        run.atlas.getTextureId(), total);
-            }
-            return;
-        }
+        if (texture == null) return;
 
         GpuTexture gpuTexture;
-        int textureGlId;
         try {
             gpuTexture = texture.getGlTexture();
-            if (gpuTexture == null) {
-                if (FontRenderer.shouldLog("gltex-null:" + run.atlas.getTextureId())) {
-                    LOGGER.warn("drawRun: getGlTexture returned null for {}, dropping {} glyphs",
-                            run.atlas.getTextureId(), total);
-                }
-                return;
-            }
-            textureGlId = getTextureGlId(gpuTexture);
-            if (textureGlId <= 0) {
-                if (FontRenderer.shouldLog("glid-fail:" + run.atlas.getTextureId())) {
-                    LOGGER.warn("drawRun: could not resolve GL id for {}, dropping {} glyphs",
-                            run.atlas.getTextureId(), total);
-                }
-                return;
-            }
         } catch (Exception e) {
-            if (FontRenderer.shouldLog("gltex-fail:" + run.atlas.getTextureId())) {
-                LOGGER.warn("drawRun: getGlTexture failed for {}, dropping {} glyphs: {}",
-                        run.atlas.getTextureId(), total, e.toString());
-            }
             return;
         }
 
@@ -418,10 +353,6 @@ public class FontPipeline {
                 GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms()
                         .write(RenderSystem.getModelViewMatrix(), COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX);
 
-                // Сырая синхронизация реального состояния юнита 0 (см. javadoc).
-                GL13.glActiveTexture(GL13.GL_TEXTURE0);
-                GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureGlId);
-
                 try (RenderPass renderPass = encoder.createRenderPass(
                         () -> "rich:font_pass",
                         client.getFramebuffer().getColorAttachmentView(),
@@ -443,61 +374,6 @@ public class FontPipeline {
         } finally {
             textureView.close();
         }
-    }
-
-    /* ===== Разрешение GL id текстуры — скопировано из рабочего TexturePipeline ===== */
-
-    private static Class<?> cachedTextureClass;
-    private static Field cachedIdField;
-
-    private int getTextureGlId(GpuTexture gpuTexture) {
-        // Fast path: GL-бэкенд всегда отдаёт GlTexture с публичным getGlId().
-        if (gpuTexture instanceof GlTexture glTexture) {
-            return glTexture.getGlId();
-        }
-
-        // Fallback: рефлексия с кэшом по классу (не-GL бэкенд / неожиданная реализация).
-        Class<?> textureClass = gpuTexture.getClass();
-        Field field = cachedIdField;
-        if (cachedTextureClass != textureClass) {
-            field = resolveIdField(gpuTexture, textureClass);
-            cachedTextureClass = textureClass;
-            cachedIdField = field;
-        }
-
-        if (field != null) {
-            try {
-                return field.getInt(gpuTexture);
-            } catch (Exception ignored) {
-            }
-        }
-
-        try {
-            for (var f : textureClass.getDeclaredFields()) {
-                if (f.getType() == int.class) {
-                    f.setAccessible(true);
-                    int value = f.getInt(gpuTexture);
-                    if (value > 0) {
-                        return value;
-                    }
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return 0;
-    }
-
-    private static Field resolveIdField(GpuTexture gpuTexture, Class<?> textureClass) {
-        for (String name : new String[]{"id", "glId"}) {
-            try {
-                Field field = textureClass.getDeclaredField(name);
-                field.setAccessible(true);
-                field.getInt(gpuTexture);
-                return field;
-            } catch (Exception ignored) {
-            }
-        }
-        return null;
     }
 
     private void prepareUniformData(FontAtlas atlas, float outlineWidth, int outlineColor, List<CharData> chunk) {

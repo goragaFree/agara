@@ -26,9 +26,6 @@ public class ModuleButton {
     private boolean binding;
     private float lastX, lastY, lastW;
 
-    /** 0..1 — how far the row is revealed by the search filter (its slot height + fade). */
-    private float reveal = 1f;
-
     public ModuleButton(ModuleStructure module) {
         this.module = module;
         this.state = module.isState() ? 1f : 0f;
@@ -43,8 +40,6 @@ public class ModuleButton {
     public boolean hasSettings() { return !components.isEmpty(); }
     public boolean isBinding() { return binding; }
     public void setBinding(boolean binding) { this.binding = binding; }
-    public float getReveal() { return reveal; }
-    public void setReveal(float reveal) { this.reveal = reveal; }
 
     public boolean isCapturing() {
         if (binding) return true;

@@ -18,7 +18,6 @@ import rich.IMinecraft;
 import rich.events.impl.WorldRenderEvent;
 import rich.util.ColorUtil;
 import rich.util.math.MathUtils;
-import rich.util.render.clientpipeline.ClientPipelines;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -111,17 +110,13 @@ public class Render3D implements IMinecraft {
     private void renderLines(MatrixStack matrices, VertexConsumerProvider.Immediate immediate, Vec3d cameraPos) {
         if (LINE.isEmpty() && LINE_DEPTH.isEmpty()) return;
 
-        if (!LINE.isEmpty()) {
-            VertexConsumer throughWalls = immediate.getBuffer(ClientPipelines.THROUGH_WALLS_LINES);
-            for (Line line : LINE) {
-                drawLineVertex(matrices, throughWalls, line, cameraPos);
-            }
+        VertexConsumer buffer = immediate.getBuffer(RenderLayers.lines());
+
+        for (Line line : LINE) {
+            drawLineVertex(matrices, buffer, line, cameraPos);
         }
-        if (!LINE_DEPTH.isEmpty()) {
-            VertexConsumer buffer = immediate.getBuffer(RenderLayers.lines());
-            for (Line line : LINE_DEPTH) {
-                drawLineVertex(matrices, buffer, line, cameraPos);
-            }
+        for (Line line : LINE_DEPTH) {
+            drawLineVertex(matrices, buffer, line, cameraPos);
         }
 
         LINE.clear();
@@ -153,17 +148,13 @@ public class Render3D implements IMinecraft {
     private void renderQuads(MatrixStack matrices, VertexConsumerProvider.Immediate immediate, Vec3d cameraPos) {
         if (QUAD.isEmpty() && QUAD_DEPTH.isEmpty()) return;
 
-        if (!QUAD.isEmpty()) {
-            VertexConsumer throughWalls = immediate.getBuffer(ClientPipelines.THROUGH_WALLS_QUADS);
-            for (Quad quad : QUAD) {
-                drawQuadVertex(matrices, throughWalls, quad, cameraPos);
-            }
+        VertexConsumer buffer = immediate.getBuffer(RenderLayers.debugFilledBox());
+
+        for (Quad quad : QUAD) {
+            drawQuadVertex(matrices, buffer, quad, cameraPos);
         }
-        if (!QUAD_DEPTH.isEmpty()) {
-            VertexConsumer buffer = immediate.getBuffer(RenderLayers.debugFilledBox());
-            for (Quad quad : QUAD_DEPTH) {
-                drawQuadVertex(matrices, buffer, quad, cameraPos);
-            }
+        for (Quad quad : QUAD_DEPTH) {
+            drawQuadVertex(matrices, buffer, quad, cameraPos);
         }
 
         QUAD.clear();

@@ -26,10 +26,7 @@ public class ButtonComp extends SettingComponent {
         Render2D.rect(x, by, width, bh, Theme.color(bg, alpha), Theme.CONTROL_RADIUS);
         String label = s.getButtonName() != null ? s.getButtonName() : s.getName();
         float tw = Theme.FONT.getWidth(label, Theme.SETTING_SIZE);
-        // под ховером кнопка заливается акцентом — подпись перетекает в
-        // контрастный к акценту цвет, чтобы не пропадать на белом акценте
-        drawText(label, x + (width - tw) / 2f, by + (bh - Theme.SETTING_SIZE) / 2f, Theme.SETTING_SIZE,
-                Theme.lerp(Theme.TEXT_ON, Theme.onAccent(), hover * 0.85f));
+        drawText(label, x + (width - tw) / 2f, by + (bh - Theme.SETTING_SIZE) / 2f, Theme.SETTING_SIZE, Theme.TEXT_ON);
     }
 
     @Override

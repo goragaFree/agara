@@ -34,11 +34,7 @@ public class BooleanComp extends SettingComponent {
 
         float kr = ph - 3f;
         float kx = px + 1.5f + (pw - kr - 3f) * anim;
-        // шайба: в выключенном состоянии белая (дорожка тёмная), во включённом —
-        // контрастная к акценту (Theme.onAccent), иначе при белом акценте
-        // белая шайба сливалась с белой дорожкой и тумблер «пропадал»
-        Color knob = Theme.lerp(new Color(255, 255, 255, 235), Theme.onAccent(), anim);
-        Render2D.rect(kx, py + 1.5f, kr, kr, Theme.color(knob, alpha), kr / 2f);
+        Render2D.rect(kx, py + 1.5f, kr, kr, Theme.color(new Color(255, 255, 255, 235), alpha), kr / 2f);
     }
 
     @Override

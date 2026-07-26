@@ -66,21 +66,16 @@ public class GlassRectPipeline {
     private ByteBuffer dataBuffer;
     private boolean initialized = false;
 
-    // ВАЖНО: точное деление, как в RectPipeline/OutlinePipeline/TexturePipeline.
-    // Прежнее ceil-округление при НЕЧЁТНОМ размере фреймбуфера смещало слой
-    // стекла относительно заливки (до ~1px к низу экрана): сверху панелей
-    // выглядывала светлая полоска голого стекла, снизу — тёмная полоска
-    // заливки без стекла (шов между слоями подложки).
-    private float getFixedScaledWidth() {
+    private int getFixedScaledWidth() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.getWindow() == null) return 960;
-        return client.getWindow().getFramebufferWidth() / FIXED_GUI_SCALE;
+        return (int) Math.ceil((double) client.getWindow().getFramebufferWidth() / FIXED_GUI_SCALE);
     }
 
-    private float getFixedScaledHeight() {
+    private int getFixedScaledHeight() {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null || client.getWindow() == null) return 540;
-        return client.getWindow().getFramebufferHeight() / FIXED_GUI_SCALE;
+        return (int) Math.ceil((double) client.getWindow().getFramebufferHeight() / FIXED_GUI_SCALE);
     }
 
     private void ensureInitialized() {

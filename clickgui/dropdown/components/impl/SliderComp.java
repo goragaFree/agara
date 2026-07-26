@@ -58,11 +58,6 @@ public class SliderComp extends SettingComponent {
         float kcx = barX + barW * disp, kcy = barY + barH / 2f;
         Render2D.rect(kcx - kw / 2f, kcy - kh / 2f, kw, kh,
                 Theme.color(new Color(255, 255, 255, 240), alpha), Math.min(kw, kh) / 2f);
-        // тонкое тёмное кольцо вокруг шайбы: на белом/светлом акценте белая
-        // шайба сливалась с заливкой трека — кольцо отделяет её на любом фоне
-        // (на тёмном треке кольцо само незаметно, мешать не будет)
-        Render2D.outline(kcx - kw / 2f, kcy - kh / 2f, kw, kh, 0.6f,
-                Theme.color(new Color(22, 22, 26, 150), alpha), Math.min(kw, kh) / 2f);
     }
 
     private void setFromFraction(float t) {

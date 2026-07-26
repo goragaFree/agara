@@ -26,20 +26,17 @@ public class ThemeTab implements PanelTab {
     private static final float ADD_W = 16f;
     private static final float OPA_LABEL = 13f, OPA_ROW = 12f, TRACK_H = 4f;
 
-    private static final String[] COLOR_LABELS = {"Accent", "Background", "Text", "Outline", "Other", "Shadow"};
+    private static final String[] COLOR_LABELS = {"Accent", "Background", "Text", "Outline", "Other"};
 
     private final ColorPicker picker = new ColorPicker();
     private String nameText = "";
     private boolean nameFocused;
     private int draggingSlider = -1;   // -1 none, else index into SLIDER_*
 
-    // 0 Opacity, 1 Strength, 2 Distortion, 3 Blur (liquid-glass knobs),
-    // 4 Sh. Size (размер/растушёвка тени, 0 = выкл),
-    // 5 Sh. Power (плотность тени = альфа цвета Shadow, синхронизирована с пикером),
-    // 6 Radius (закругление гуи: окна напрямую, модули/контролы пропорционально)
-    private static final String[] SLIDER_NAMES = {"Opacity", "Strength", "Distortion", "Blur", "Sh. Size", "Sh. Power", "Radius"};
-    private static final float[]  SLIDER_MIN   = {0f, 0f, -0.2f, 0f, 0f, 0f, 0f};
-    private static final float[]  SLIDER_MAX   = {1f, 1f,  0.2f, 8f, 20f, 1f, 16f};
+    // 0 Opacity, 1 Strength, 2 Distortion, 3 Blur (liquid-glass knobs)
+    private static final String[] SLIDER_NAMES = {"Opacity", "Strength", "Distortion", "Blur"};
+    private static final float[]  SLIDER_MIN   = {0f, 0f, -0.2f, 0f};
+    private static final float[]  SLIDER_MAX   = {1f, 1f,  0.2f, 8f};
 
     // per-element animation state (driven by SettingAnimationController)
     private final float[] sliderDisp = new float[SLIDER_NAMES.length];   // glided fill fraction
@@ -97,8 +94,7 @@ public class ThemeTab implements PanelTab {
             case 1:  return t.background;
             case 2:  return t.text;
             case 3:  return t.outline;
-            case 4:  return t.extra;
-            default: return t.shadow;
+            default: return t.extra;
         }
     }
 
@@ -108,8 +104,7 @@ public class ThemeTab implements PanelTab {
             case 1:  t.background = c; break;
             case 2:  t.text = c; break;
             case 3:  t.outline = c; break;
-            case 4:  t.extra = c; break;
-            default: t.shadow = c;
+            default: t.extra = c;
         }
     }
 
@@ -187,9 +182,7 @@ public class ThemeTab implements PanelTab {
 
                 float ra = alpha * f;                     // fade
                 float midY = oy + rowH / 2f;              // stay centred as the row collapses
-                // полуоткрытый диапазон (< вместо <=): строки идут вплотную, и общая
-                // граница иначе засчитывается ОБЕИМ строкам — двойная подсветка
-                boolean hov = i != removingIndex && mx >= cx && mx <= cx + cw && my >= oy && my < oy + rowH;
+                boolean hov = i != removingIndex && mx >= cx && mx <= cx + cw && my >= oy && my <= oy + rowH;
                 if (hov) Render2D.rect(cx + 3f, oy + 1f, cw - 6f, Math.max(0f, rowH - 2f), Theme.color(new Color(255, 255, 255, 12), ra), 4f);
                 // brief accent flash behind the freshly saved row, fading as it settles
                 if (intro && f < 1f) Render2D.rect(cx + 3f, oy + 1f, cw - 6f, SAVED_ROW - 2f, Theme.accent(alpha * (1f - f) * 0.45f), 4f);
@@ -218,9 +211,7 @@ public class ThemeTab implements PanelTab {
 
         // color rows
         for (int i = 0; i < COLOR_LABELS.length; i++) {
-            // полуоткрытый диапазон: строки цветов идут вплотную (шаг = CROW),
-            // «<=» на общей границе подсвечивал бы сразу две соседние строки
-            boolean hov = mx >= cx && mx <= cx + cw && my >= oy && my < oy + CROW;
+            boolean hov = mx >= cx && mx <= cx + cw && my >= oy && my <= oy + CROW;
             float ch = colorHover[i] = SettingAnimationController.hover(colorHover[i], hov);
             if (ch > 0.001f)
                 Render2D.rect(cx + 3f, oy + 1f, cw - 6f, CROW - 2f, Theme.color(new Color(255, 255, 255, 12), alpha * ch), 4f);
@@ -274,9 +265,6 @@ public class ThemeTab implements PanelTab {
             float knobX = tx + tw * frac;
             float kw = 5f + g * 2.5f, khh = 4f + g * 1.5f;     // grab grow
             Render2D.rect(knobX - kw / 2f, ty + TRACK_H / 2f - khh, kw, khh * 2f, Theme.color(Color.WHITE, alpha), kw / 2f);
-            // контрастное кольцо: белая шайба не сливается со светлой заливкой
-            Render2D.outline(knobX - kw / 2f, ty + TRACK_H / 2f - khh, kw, khh * 2f, 0.6f,
-                    Theme.color(new Color(22, 22, 26, 150), alpha), kw / 2f);
             oy += OPA_ROW;
         }
     }
@@ -288,10 +276,7 @@ public class ThemeTab implements PanelTab {
             case 0:  return t.opacity;
             case 1:  return t.glassStrength;
             case 2:  return t.glassDistortion;
-            case 3:  return t.glassBlur;
-            case 4:  return t.shadowSize;
-            case 5:  return t.shadow.getAlpha() / 255f;
-            default: return t.radius;
+            default: return t.glassBlur;
         }
     }
 
@@ -300,21 +285,16 @@ public class ThemeTab implements PanelTab {
             case 0:  t.opacity = v; break;
             case 1:  t.glassStrength = v; break;
             case 2:  t.glassDistortion = v; break;
-            case 3:  t.glassBlur = v; break;
-            case 4:  t.shadowSize = v; break;
-            case 5:  t.shadow = new Color(t.shadow.getRed(), t.shadow.getGreen(),
-                    t.shadow.getBlue(), Math.round(clamp01(v) * 255f)); break;
-            default: t.radius = v;
+            default: t.glassBlur = v;
         }
     }
 
     private static String sliderText(int i, float v) {
         switch (i) {
+            case 0:
+            case 1:  return Math.round(v * 100f) + "%";
             case 2:  return String.format("%.2f", v);
-            case 3:  return String.format("%.1f", v);
-            case 4:
-            case 6:  return Math.round(v) + "px";
-            default: return Math.round(v * 100f) + "%";
+            default: return String.format("%.1f", v);
         }
     }
 
@@ -352,7 +332,7 @@ public class ThemeTab implements PanelTab {
         } else {
             for (int i = 0; i < saved.size(); i++) {
                 float rowH = rowHeight(i);
-                if (mx >= cx && mx <= cx + cw && my >= oy && my < oy + rowH && button == 0) {
+                if (mx >= cx && mx <= cx + cw && my >= oy && my <= oy + rowH && button == 0) {
                     if (mx >= cx + cw - 16f) {
                         // start the collapse; the render pass removes it once it finishes
                         if (removingIndex == -1) { removingIndex = i; removeAnim = 1f; }
@@ -369,13 +349,9 @@ public class ThemeTab implements PanelTab {
         // color rows -> open picker to the left of the whole panel
         GuiTheme cur = ThemeManager.INSTANCE.current();
         for (int i = 0; i < COLOR_LABELS.length; i++) {
-            if (mx >= cx && mx <= cx + cw && my >= oy && my < oy + CROW && button == 0) {
+            if (mx >= cx && mx <= cx + cw && my >= oy && my <= oy + CROW && button == 0) {
                 final int ci = i;
-                // у тени (Shadow, индекс 5) сила задаётся отдельным слайдером
-                // Sh. Power — полоса альфы в пикере дублировала бы его, поэтому
-                // для тени пикер открывается без неё (альфа сохраняется как есть)
-                boolean withAlpha = ci != 5;
-                picker.open(r.panelX() - picker.width() - 4f, oy, getColor(cur, ci), withAlpha, c -> {
+                picker.open(r.panelX() - picker.width() - 4f, oy, getColor(cur, ci), c -> {
                     setColor(cur, ci, c);
                     ThemeManager.INSTANCE.apply();
                 });
@@ -388,7 +364,7 @@ public class ThemeTab implements PanelTab {
         oy += 4f;
         float tx = cx + 8f, tw = cw - 16f;
         for (int i = 0; i < SLIDER_NAMES.length; i++) {
-            if (button == 0 && my >= oy && my < oy + OPA_LABEL + OPA_ROW) {
+            if (button == 0 && my >= oy && my <= oy + OPA_LABEL + OPA_ROW) {
                 draggingSlider = i;
                 setSliderValue(cur, i, SLIDER_MIN[i] + (SLIDER_MAX[i] - SLIDER_MIN[i]) * clamp01((mx - tx) / tw));
                 ThemeManager.INSTANCE.apply();

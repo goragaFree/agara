@@ -32,12 +32,6 @@ public final class Theme {
     public static float MODULE_HEIGHT = 18f;
     public static float MODULE_GAP    = 2f;
 
-    /* ============================ Search ============================ */
-    public static float SEARCH_WIDTH  = 200f;
-    public static float SEARCH_HEIGHT = 18f;
-    /** Vertical gap between the panel row and the search bar below it. */
-    public static float SEARCH_GAP    = 12f;
-
     /* ============================ Fonts ============================ */
     public static final Font FONT  = Fonts.BOLD;
     public static final Font ICONS = Fonts.GUI_ICONS;
@@ -101,19 +95,6 @@ public final class Theme {
 
     /* ============================ Helpers ============================ */
 
-    /**
-     * Насколько контент, отступающий от боковых краёв панели на {@code pad},
-     * должен подняться над её низом, чтобы не вылезать за дугу скруглённого
-     * угла. Считается из геометрии угла (0 — дуга до контента не достаёт):
-     * при штатном радиусе это ~1px вместо линейной «мёртвой зоны», а при
-     * больших радиусах клип не режет контент высоко над краем панели.
-     */
-    public static float cornerInset(float radius, float pad) {
-        float reach = radius - pad;   // насколько дуга «глубже» бокового отступа
-        if (reach <= 0f) return 0f;
-        return radius - (float) Math.sqrt(radius * radius - reach * reach) + 0.5f;
-    }
-
     public static int color(Color c, float alpha) {
         int a = clampByte((int) (c.getAlpha() * alpha));
         return (a << 24) | (c.getRGB() & 0xFFFFFF);
@@ -126,18 +107,6 @@ public final class Theme {
 
     public static int accent(float alpha) {
         return color(ACCENT, alpha);
-    }
-
-    /**
-     * Цвет контента ПОВЕРХ акцентной заливки (шайба тумблера, «...» на
-     * бинд-капсуле, подпись кнопки под ховером): на тёмном акценте — белый,
-     * на светлом/белом — тёмный. Выбирается по перцептивной яркости акцента,
-     * поэтому контент читается при любом цвете темы.
-     */
-    public static Color onAccent() {
-        float lum = (0.299f * ACCENT.getRed() + 0.587f * ACCENT.getGreen()
-                + 0.114f * ACCENT.getBlue()) / 255f;
-        return lum > 0.6f ? new Color(22, 22, 26, 235) : new Color(255, 255, 255, 235);
     }
 
     public static Color lerp(Color a, Color b, float t) {
@@ -159,10 +128,29 @@ public final class Theme {
 
     public static String keyName(int key) {
         if (key == GLFW.GLFW_KEY_UNKNOWN || key == -1) return "None";
-        // Единый источник имён клавиш — KeyHelper: фиксированные английские
-        // имена, НЕ зависящие от раскладки. Прежний путь через glfwGetKeyName
-        // на русской раскладке возвращал кириллицу («Ё» вместо Grave), и
-        // подпись бинда менялась вместе с языком системы.
-        return rich.util.string.KeyHelper.getKeyName(key);
+        // mouse buttons are stored as their GLFW index (0..7 -> treated as a mouse bind)
+        if (key >= 0 && key < 8) {
+            switch (key) {
+                case 0:  return "ЛКМ";
+                case 1:  return "ПКМ";
+                case 2:  return "СКМ";
+                default: return "MB" + (key + 1);
+            }
+        }
+        switch (key) {
+            case GLFW.GLFW_KEY_LEFT_SHIFT:  case GLFW.GLFW_KEY_RIGHT_SHIFT:   return "Shift";
+            case GLFW.GLFW_KEY_LEFT_CONTROL:case GLFW.GLFW_KEY_RIGHT_CONTROL: return "Ctrl";
+            case GLFW.GLFW_KEY_LEFT_ALT:    case GLFW.GLFW_KEY_RIGHT_ALT:     return "Alt";
+            case GLFW.GLFW_KEY_SPACE:  return "Space";
+            case GLFW.GLFW_KEY_TAB:    return "Tab";
+            case GLFW.GLFW_KEY_ENTER:  return "Enter";
+            default:
+                String name = GLFW.glfwGetKeyName(key, 0);
+                if (name != null && !name.isBlank()) return name.toUpperCase();
+                if (key >= GLFW.GLFW_KEY_F1 && key <= GLFW.GLFW_KEY_F25) {
+                    return "F" + (key - GLFW.GLFW_KEY_F1 + 1);
+                }
+                return "Key" + key;
+        }
     }
 }
