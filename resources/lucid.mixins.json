@@ -1,0 +1,43 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.lucid.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+  ],
+  "client": [
+    "AbstractContainerScreenMixin",
+    "ContainerScreenInvoker",
+    "GameRendererMixin",
+    "GuiMixin",
+    "HudMixin",
+    "GuiGraphicsExtractorAccessor",
+    "ClientClockManagerMixin",
+    "LevelMixin",
+    "BlockStateBaseMixin",
+    "WeatherEffectRendererMixin",
+    "LightningBoltMixin",
+    "OptionInstanceAccessor",
+    "MinecraftAccessor",
+    "MouseHandlerMixin",
+    "TitleScreenMixin",
+    "ItemEntityRendererMixin",
+    "ItemEntityRenderStateMixin",
+    "LivingEntityRendererMixin",
+    "LivingEntityRenderStateMixin",
+    "ClientLevelMixin",
+    "ScreenEffectRendererMixin",
+    "ParticleEngineMixin",
+    "ItemInHandRendererMixin",
+    "StringDecomposerMixin",
+    "KeyMappingAccessor",
+    "KeyboardInputMixin",
+    "ConnectionMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

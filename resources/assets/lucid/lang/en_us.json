@@ -1,0 +1,20 @@
+{
+  "key.category.lucid.modules": "Lucid",
+  "key.lucid.clickgui": "Open ClickGUI",
+  "key.lucid.block_overlay": "BlockOverlay",
+  "key.lucid.esp_box": "ESP Box",
+  "key.lucid.smooth_camera": "SmoothCamera",
+  "key.lucid.auto_sprint": "AutoSprint",
+  "key.lucid.watermark": "Watermark",
+  "key.lucid.gamma": "Gamma",
+  "key.lucid.item_scroller": "Item Scroller",
+  "key.lucid.ambience": "Ambience",
+  "key.lucid.removals": "Removals",
+  "key.lucid.item_physic": "ItemPhysic",
+  "key.lucid.saturation": "Saturation",
+  "key.lucid.see_invisible": "SeeInvisible",
+  "key.lucid.view_model": "ViewModel",
+  "key.lucid.name_protect": "NameProtect",
+  "key.lucid.inventory_move": "InventoryMove",
+  "key.lucid.kill_effect": "KillEffect"
+}

@@ -1,0 +1,20 @@
+{
+  "key.category.lucid.modules": "Lucid",
+  "key.lucid.clickgui": "Открыть ClickGUI",
+  "key.lucid.block_overlay": "Подсветка блока",
+  "key.lucid.esp_box": "ESP Box",
+  "key.lucid.smooth_camera": "Плавная камера",
+  "key.lucid.auto_sprint": "Автоспринт",
+  "key.lucid.watermark": "Водяной знак",
+  "key.lucid.gamma": "Гамма",
+  "key.lucid.item_scroller": "Перенос колесом",
+  "key.lucid.ambience": "Время суток",
+  "key.lucid.removals": "Скрытие",
+  "key.lucid.item_physic": "Физика предметов",
+  "key.lucid.saturation": "Насыщенность",
+  "key.lucid.see_invisible": "Невидимые",
+  "key.lucid.view_model": "Руки",
+  "key.lucid.name_protect": "Скрыть ник",
+  "key.lucid.inventory_move": "Ходьба в инвентаре",
+  "key.lucid.kill_effect": "Добивание"
+}
